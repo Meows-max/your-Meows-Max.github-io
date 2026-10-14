@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课程作业展示</title>
+<style>
+  /* ══════════════════════════════════════════════════════════
+     这个文件是「骨架」，负责排版和样式。
+     所有文字都在 content.js 里改，不用动这个文件。
+     想微调配色就改下面 :root 里的颜色值。
+     ══════════════════════════════════════════════════════════ */
+  :root{
+    /* 底色：月白 */
+    --bg:          #F5F7F7;
+    --surface:     #FFFFFF;
+    --surface-2:   #F7FAFA;
+
+    /* 文字：墨青三档 */
+    --ink:         #1B2426;
+    --ink-2:       #4A585C;
+    --ink-3:       #6F7D82;
+
+    /* 分割线 */
+    --line:        #DDE5E5;
+    --line-soft:   #EAF0EF;
+
+    /* 黛青：主色，负责骨架 */
+    --dai:         #2E4A54;
+    --dai-2:       #3E6270;
+    --dai-line:    rgba(46,74,84,.22);
+    --dai-soft:    rgba(46,74,84,.08);
+
+    /* 竹青：辅色，负责填充和点缀 */
+    --zhu:         #8FA6A0;
+    --zhu-line:    rgba(143,166,160,.48);
+    --zhu-soft:    rgba(143,166,160,.16);
+
+    /* 朱砂：只用在印章上，做整个页面的视觉落点 */
+    --zhu-sha:     #9E4A42;
+
+    --radius:      14px;
+    --shadow-sm:   0 1px 2px rgba(27,36,38,.04), 0 8px 20px -14px rgba(27,36,38,.20);
+    --shadow:      0 1px 2px rgba(27,36,38,.04), 0 18px 40px -22px rgba(27,36,38,.30);
+    --wide:        1080px;
+    --nav-h:       60px;
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+
+  html{ scroll-behavior:smooth; scroll-padding-top:calc(var(--nav-h) + 24px); }
+
+  body{
+    margin:0;
+    color:var(--ink);
+    font-family: system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:16px;
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+
+    /* 两团水墨晕染：上方竹青，右上淡黛青。让月白底有层次，不是一张死白纸 */
+    background:
+      radial-gradient(1000px 540px at 50% -8%, rgba(143,166,160,.26), transparent 70%),
+      radial-gradient(780px 480px at 92% 2%, rgba(46,74,84,.07), transparent 66%),
+      var(--bg);
+    background-attachment:fixed;
+  }
+
+  img,video{ max-width:100%; display:block; }
+  a{ color:inherit; }
+  code{ font-family:ui-monospace,Consolas,monospace; }
+
+  .wrap{ width:100%; max-width:var(--wide); margin-inline:auto; padding-inline:24px; }
+
+  /* 高亮：content.js 里用 [[文字]] 包住的部分 */
+  .hl{
+    font-style:normal; font-weight:inherit; color:var(--dai);
+    box-shadow:inset 0 -.42em 0 var(--zhu-soft);
+  }
+
+  /* ============ 顶部导航 ============ */
+  .nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(245,247,247,.86);
+    backdrop-filter:saturate(180%) blur(14px);
+    -webkit-backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-in{ display:flex; align-items:center; gap:20px; height:var(--nav-h); }
+  .nav-brand{
+    font-size:14px; font-weight:700; letter-spacing:.06em;
+    white-space:nowrap; flex:none; color:var(--dai);
+  }
+  .nav-links{
+    display:flex; gap:2px; overflow-x:auto; scrollbar-width:none;
+    -ms-overflow-style:none; margin-left:auto;
+  }
+  .nav-links::-webkit-scrollbar{ display:none; }
+  .nav-links a{
+    font-size:14px; color:var(--ink-2); text-decoration:none;
+    padding:6px 12px; border-radius:8px; white-space:nowrap;
+    border:1px solid transparent;
+    transition:background .16s,color .16s,border-color .16s;
+  }
+  .nav-links a:hover{ background:var(--line-soft); color:var(--ink); }
+  .nav-links a.is-on{
+    color:var(--dai); background:var(--dai-soft); border-color:var(--dai-line);
+  }
+
+  /* ============ 首屏 ============ */
+  .hero{ position:relative; overflow:hidden; padding:78px 0 58px; }
+  /* 背后那个巨大的淡字，撑住首屏空感 */
+  .hero .watermark{
+    position:absolute; right:-10px; top:-56px; z-index:0;
+    font-family:"Kaiti SC","KaiTi","STKaiti",serif;
+    font-size:clamp(180px,27vw,330px); line-height:1;
+    color:rgba(46,74,84,.055);
+    pointer-events:none; user-select:none;
+  }
+  .hero > *{ position:relative; z-index:1; }
+
+  .hero-head{ display:flex; align-items:center; gap:15px; margin-bottom:24px; }
+
+  /* 印章：整个页面唯一的暖色，朱砂 */
+  .seal{
+    flex:none; width:54px; height:54px; border-radius:7px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"Kaiti SC","KaiTi","STKaiti",serif;
+    font-size:21px; font-weight:700; letter-spacing:.02em;
+    color:#FBF3EC;
+    background:linear-gradient(150deg,#A8544A,#8C3F38);
+    box-shadow:0 0 0 3px rgba(158,74,66,.10), 0 10px 22px -12px rgba(140,63,56,.85);
+  }
+  .chip{
+    display:inline-block; font-size:13px; font-weight:600; letter-spacing:.04em;
+    color:var(--dai); background:var(--dai-soft);
+    border:1px solid var(--dai-line);
+    padding:5px 13px; border-radius:999px;
+  }
+  .hero h1{
+    margin:0 0 20px;
+    font-size:clamp(30px,4.6vw,46px);
+    line-height:1.24; letter-spacing:-.02em; font-weight:700;
+    color:var(--ink);
+  }
+  .hero .lede{
+    margin:0; max-width:64ch;
+    font-size:clamp(16px,1.7vw,18px); color:var(--ink-2);
+  }
+  .meta{
+    display:flex; flex-wrap:wrap; gap:14px 40px;
+    margin-top:34px; padding-top:26px;
+    border-top:1px solid var(--line);
+  }
+  .meta dt{
+    color:var(--ink-3); font-size:12.5px; letter-spacing:.1em; margin-bottom:3px;
+  }
+  .meta dd{ margin:0; font-weight:600; font-size:14.5px; color:var(--ink); }
+
+  .toc{
+    display:flex; flex-wrap:wrap; gap:8px;
+    margin-top:38px; padding-top:30px; border-top:1px solid var(--line);
+  }
+  .toc-label{
+    flex:0 0 100%; font-size:12.5px; font-weight:700;
+    letter-spacing:.14em; color:var(--ink-3); margin-bottom:8px;
+  }
+  .toc a{
+    font-size:13.5px; text-decoration:none; color:var(--ink-2);
+    background:var(--surface);
+    border:1px solid var(--line);
+    padding:6px 15px; border-radius:999px;
+    box-shadow:0 1px 2px rgba(27,36,38,.03);
+    transition:border-color .16s,color .16s,transform .16s,background .16s;
+  }
+  .toc a:hover{
+    border-color:var(--dai-line); color:var(--dai);
+    background:var(--dai-soft); transform:translateY(-1px);
+  }
+
+  /* ============ 区块 ============ */
+  section{ padding:64px 0; }
+  section.band{
+    position:relative;
+    background:linear-gradient(180deg,#EDF3F3,#F8FBFB);
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+  }
+  /* 深色区块顶部一道细黛青线，给区块分界一个明确的起点 */
+  section.band::before{
+    content:''; position:absolute; inset:0 0 auto 0; height:2px;
+    background:linear-gradient(90deg,transparent,var(--dai) 50%,transparent);
+    opacity:.28;
+  }
+  section.band + section.band{ border-top:none; }
+
+  .sec-head{ margin-bottom:38px; }
+  .sec-kicker{
+    font-size:12.5px; font-weight:700; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--zhu);
+    margin:0 0 12px;
+  }
+  .sec-head h2{
+    margin:0; font-size:clamp(22px,3vw,30px);
+    letter-spacing:-.015em; font-weight:700; color:var(--ink);
+    display:flex; align-items:center; gap:14px;
+  }
+  /* 章节序号：实心黛青方块，一列排下来形成视觉节奏 */
+  .sec-head h2 .idx{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:36px; height:36px; flex:none; border-radius:9px;
+    background:linear-gradient(150deg,var(--dai-2),var(--dai));
+    color:#FFFFFF; font-size:13px; font-weight:700;
+    font-variant-numeric:tabular-nums;
+    box-shadow:0 8px 16px -10px rgba(46,74,84,.85);
+  }
+  .sec-head > p:last-child:not(.sec-kicker){
+    margin:14px 0 0; color:var(--ink-2); max-width:64ch;
+  }
+
+  /* ============ 成片 · 播放器 ============ */
+  .player{
+    position:relative; background:#10151A; border-radius:var(--radius);
+    overflow:hidden; aspect-ratio:16/9;
+    border:1px solid rgba(46,74,84,.22);
+    box-shadow:0 24px 54px -26px rgba(27,36,38,.55);
+  }
+  .player video{ width:100%; height:100%; object-fit:contain; background:#10151A; }
+  .player.is-empty video{ visibility:hidden; }
+  .player-empty{
+    display:none; position:absolute; inset:0;
+    flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    color:#8C979D; text-align:center; padding:24px;
+  }
+  .player.is-empty .player-empty{ display:flex; }
+  .player-empty strong{ color:#C7D0D3; font-size:15px; font-weight:600; }
+  .player-empty code{
+    font-size:13px; background:rgba(143,166,160,.16);
+    border:1px solid rgba(143,166,160,.4);
+    padding:4px 10px; border-radius:6px; color:#A9C0BA;
+  }
+  .player-note{
+    margin:18px 0 0; font-size:14px; color:var(--ink-3);
+    display:flex; flex-wrap:wrap; gap:8px 22px;
+  }
+  .player-note span{
+    border-left:2px solid var(--zhu-line); padding-left:10px;
+  }
+
+  /* ============ 图片占位 ============ */
+  .shot{
+    position:relative; margin:0; border-radius:var(--radius);
+    overflow:hidden; background:var(--surface-2);
+    border:1px solid var(--line);
+  }
+  .shot img{ width:100%; height:100%; object-fit:cover; }
+  .shot-empty{
+    display:none; position:absolute; inset:0;
+    flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    background:repeating-linear-gradient(45deg,rgba(46,74,84,.055) 0 10px,transparent 10px 20px);
+    color:var(--ink-3); text-align:center; padding:20px;
+  }
+  .shot.is-empty img{ display:none; }
+  .shot.is-empty .shot-empty{ display:flex; }
+  .shot-empty span{ font-size:13px; font-weight:500; }
+  .shot-empty code{
+    font-size:12px; background:var(--surface); border:1px solid var(--line);
+    padding:3px 8px; border-radius:6px; color:var(--ink-2);
+  }
+
+  /* ============ 选题 ============ */
+  .lead-text{
+    font-size:clamp(17px,2.1vw,21px); line-height:1.72;
+    color:var(--ink); margin:0 0 42px; max-width:56ch;
+  }
+  .split{ display:grid; gap:32px; grid-template-columns:1fr; }
+  @media (min-width:760px){ .split{ grid-template-columns:1fr 1fr; gap:48px; } }
+  .split h4{
+    margin:0 0 12px; font-size:16px; font-weight:700; color:var(--ink);
+    display:flex; align-items:center; gap:9px;
+  }
+  .split h4::before{
+    content:''; width:3px; height:16px; border-radius:2px;
+    background:linear-gradient(180deg,var(--dai-2),var(--dai)); flex:none;
+  }
+  .split p{ margin:0 0 12px; color:var(--ink-2); font-size:15.5px; }
+  .split p:last-child{ margin-bottom:0; }
+
+  .quote{
+    position:relative; margin:42px 0 0; padding:24px 28px;
+    background:linear-gradient(140deg,var(--zhu-soft),rgba(143,166,160,.05));
+    border-radius:var(--radius);
+    border:1px solid var(--zhu-line);
+    border-left:3px solid var(--dai);
+    font-size:15.5px; color:var(--ink-2);
+  }
+  .quote strong{ color:var(--dai); }
+
+  /* ============ 策划 ============ */
+  .cards{ display:grid; gap:16px; grid-template-columns:1fr; }
+  @media (min-width:640px){ .cards{ grid-template-columns:repeat(2,1fr); } }
+  .card{
+    position:relative; overflow:hidden;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius); padding:24px 24px 26px;
+    box-shadow:var(--shadow-sm);
+    transition:border-color .2s,box-shadow .2s,transform .2s;
+  }
+  /* 卡片顶部一道黛青细线，悬停时亮起 */
+  .card::before{
+    content:''; position:absolute; inset:0 0 auto 0; height:2px;
+    background:linear-gradient(90deg,transparent,var(--dai),transparent);
+    opacity:0; transition:opacity .2s;
+  }
+  .card:hover{
+    border-color:var(--dai-line); transform:translateY(-2px);
+    box-shadow:var(--shadow);
+  }
+  .card:hover::before{ opacity:.55; }
+  .card .card-k{
+    font-size:12px; font-weight:700; letter-spacing:.14em;
+    color:var(--zhu); margin-bottom:10px; display:block;
+  }
+  .card h4{ margin:0 0 12px; font-size:17px; font-weight:700; color:var(--ink); }
+  .card p{ margin:0; color:var(--ink-2); font-size:15px; }
+  .card ul{ margin:0; padding-left:1.15em; color:var(--ink-2); font-size:15px; }
+  .card li{ margin-bottom:7px; }
+  .card li::marker{ color:var(--dai); }
+  .card li:last-child{ margin-bottom:0; }
+
+  .flow{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    margin-top:24px; padding:22px 26px;
+    background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);
+  }
+  .flow .flow-label{
+    font-size:12px; font-weight:700; letter-spacing:.14em;
+    color:var(--ink-3); flex:0 0 100%; margin-bottom:8px;
+  }
+  .flow b{
+    font-size:14px; font-weight:600; color:var(--dai);
+    background:var(--dai-soft); border:1px solid var(--dai-line);
+    padding:6px 15px; border-radius:8px;
+  }
+  .flow i{ color:var(--zhu); font-style:normal; font-size:11px; }
+
+  /* ============ 文案 ============ */
+  .script{
+    position:relative; overflow:hidden;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:clamp(24px,4vw,46px);
+  }
+  .script::before{
+    content:''; position:absolute; inset:0 0 auto 0; height:2px;
+    background:linear-gradient(90deg,transparent,var(--dai),transparent);
+    opacity:.35;
+  }
+  .script-part + .script-part{
+    margin-top:34px; padding-top:34px;
+    border-top:1px dashed var(--line);
+  }
+  .script-label{
+    display:inline-block; font-size:12px; font-weight:700;
+    letter-spacing:.1em;
+    color:var(--dai); background:var(--dai-soft);
+    border:1px solid var(--dai-line);
+    padding:3px 11px; border-radius:6px; margin-bottom:16px;
+  }
+  .script-text{
+    margin:0; font-size:clamp(16px,2vw,18.5px); line-height:2.05; color:var(--ink);
+    font-family:"Kaiti SC","KaiTi","STKaiti",Georgia,serif;
+  }
+  .script-part .cue{
+    display:block; color:var(--ink-3); font-size:14px; line-height:1.8;
+    font-family:system-ui,"Microsoft YaHei",sans-serif; margin:12px 0 0;
+  }
+  .script-note{
+    margin:26px 0 0; padding-top:18px;
+    border-top:1px solid var(--line-soft);
+    font-size:13.5px; color:var(--ink-3);
+  }
+
+  /* ============ 素材 ============ */
+  .assets{ display:grid; gap:16px; grid-template-columns:1fr; }
+  @media (min-width:640px){ .assets{ grid-template-columns:repeat(2,1fr); } }
+  @media (min-width:940px){ .assets{ grid-template-columns:repeat(3,1fr); } }
+  .asset{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius); overflow:hidden;
+    display:flex; flex-direction:column;
+    box-shadow:var(--shadow-sm);
+    transition:border-color .2s,transform .2s,box-shadow .2s;
+  }
+  .asset:hover{
+    border-color:var(--dai-line); transform:translateY(-3px);
+    box-shadow:var(--shadow);
+  }
+  .asset .shot{
+    border:none; border-radius:0; background:var(--surface-2);
+    border-bottom:1px solid var(--line); aspect-ratio:16/10;
+  }
+  .asset-body{ padding:17px 19px 19px; }
+  .asset-body h4{
+    margin:0 0 7px; font-size:15.5px; font-weight:700; color:var(--ink);
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .tag{
+    font-size:11.5px; font-weight:600; letter-spacing:.05em;
+    padding:2px 9px; border-radius:5px; flex:none;
+    background:var(--zhu-soft); color:#3F5A55;
+    border:1px solid var(--zhu-line);
+  }
+  .asset-body p{ margin:0; font-size:14px; color:var(--ink-2); line-height:1.7; }
+  .asset-body .src{
+    display:block; margin-top:10px; padding-top:9px;
+    border-top:1px solid var(--line-soft);
+    font-size:12.5px; color:var(--ink-3);
+  }
+
+  /* ============ 方法 ============ */
+  .methods{ display:flex; flex-direction:column; }
+  .method{
+    display:grid; gap:8px 28px; grid-template-columns:1fr;
+    padding:28px 0; border-top:1px solid var(--line);
+  }
+  .method:first-child{ border-top:none; padding-top:0; }
+  .method:last-child{ padding-bottom:0; }
+  @media (min-width:760px){ .method{ grid-template-columns:210px 1fr; gap:8px 40px; } }
+  .method h4{
+    margin:0; font-size:16.5px; font-weight:700; color:var(--ink);
+    display:flex; align-items:baseline; gap:11px;
+  }
+  .method h4 .mnum{
+    font-size:12.5px; font-weight:700; color:var(--dai);
+    font-variant-numeric:tabular-nums; flex:none;
+    padding:1px 7px; border-radius:5px;
+    background:var(--dai-soft); border:1px solid var(--dai-line);
+  }
+  .method-body p{ margin:0 0 11px; color:var(--ink-2); font-size:15.5px; }
+  .method-body p:last-child{ margin-bottom:0; }
+  .method-body .why{
+    font-size:14px; color:var(--ink-3);
+    padding-left:14px; border-left:2px solid var(--zhu-line);
+  }
+
+  /* ============ 工具 ============ */
+  .tools-grid{ display:grid; gap:14px; grid-template-columns:1fr; }
+  @media (min-width:560px){ .tools-grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (min-width:900px){ .tools-grid{ grid-template-columns:repeat(3,1fr); } }
+  .tool{
+    display:flex; gap:15px; align-items:flex-start;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius); padding:19px 21px;
+    box-shadow:var(--shadow-sm);
+    transition:border-color .2s,transform .2s,box-shadow .2s;
+  }
+  .tool:hover{
+    border-color:var(--dai-line); transform:translateY(-2px);
+    box-shadow:var(--shadow);
+  }
+  .tool-mark{
+    flex:none; width:40px; height:40px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(150deg,rgba(46,74,84,.15),rgba(46,74,84,.05));
+    border:1px solid var(--dai-line);
+    color:var(--dai); font-size:14px; font-weight:700; letter-spacing:-.02em;
+  }
+  .tool-body h4{ margin:0 0 5px; font-size:15.5px; font-weight:700; color:var(--ink); }
+  .tool-body p{ margin:0; font-size:13.5px; color:var(--ink-2); line-height:1.65; }
+
+  /* ============ 总结 ============ */
+  .takeaways{ display:grid; gap:16px; grid-template-columns:1fr; }
+  @media (min-width:760px){ .takeaways{ grid-template-columns:repeat(3,1fr); } }
+  .takeaway{ padding:24px 0 0; border-top:2px solid var(--dai); }
+  .takeaway h4{ margin:0 0 12px; font-size:16px; font-weight:700; color:var(--ink); }
+  .takeaway p{ margin:0; color:var(--ink-2); font-size:15px; }
+  .closing{
+    position:relative; margin:46px 0 0; padding:32px 0 0;
+    border-top:1px solid var(--line);
+    font-size:clamp(16px,2vw,18px); line-height:1.9; color:var(--ink-2);
+    max-width:60ch;
+  }
+
+  /* ============ 页脚 / 回顶 / 报错 ============ */
+  footer{
+    border-top:1px solid var(--line);
+    padding:34px 0 52px; font-size:13.5px; color:var(--ink-3);
+  }
+  footer .wrap{ display:flex; flex-wrap:wrap; gap:8px 24px; justify-content:space-between; }
+
+  .totop{
+    position:fixed; right:24px; bottom:24px; z-index:40;
+    width:44px; height:44px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow-sm); color:var(--ink-2);
+    text-decoration:none; font-size:16px; line-height:1;
+    opacity:0; visibility:hidden;
+    transition:opacity .2s,visibility .2s,transform .2s,color .2s,border-color .2s;
+  }
+  .totop.is-on{ opacity:1; visibility:visible; }
+  .totop:hover{
+    transform:translateY(-2px);
+    color:var(--dai); border-color:var(--dai-line);
+  }
+
+  .oops{ max-width:640px; margin:0 auto; padding:80px 24px; }
+  .oops h2{ margin:0 0 14px; font-size:22px; color:var(--ink); }
+  .oops p{ margin:0 0 12px; color:var(--ink-2); }
+  .oops code{
+    font-size:13.5px; background:var(--dai-soft); color:var(--dai);
+    border:1px solid var(--dai-line);
+    padding:2px 7px; border-radius:5px;
+  }
+  .oops ol{ color:var(--ink-2); padding-left:1.3em; }
+  .oops li{ margin-bottom:8px; }
+
+  @media (max-width:640px){
+    .hero{ padding:46px 0 38px; }
+    section{ padding:46px 0; }
+    .wrap{ padding-inline:20px; }
+    .nav-brand{ display:none; }
+    .nav-links{ margin-left:0; }
+    .seal{ width:46px; height:46px; font-size:18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= 导航 ================= -->
+<nav class="nav">
+  <div class="wrap nav-in">
+    <span class="nav-brand" id="brand"></span>
+    <div class="nav-links" id="navlinks"></div>
+  </div>
+</nav>
+
+<!-- ================= 首屏 ================= -->
+<header class="hero wrap" id="hero"></header>
+
+<!-- ================= 正文（由 JS 生成） ================= -->
+<main id="sections"></main>
+
+<footer>
+  <div class="wrap" id="footer"></div>
+</footer>
+
+<a href="#" class="totop" id="totop" aria-label="回到顶部">↑</a>
+
+
+<!-- 播放器模板：视频固定放在 media\video.mp4 -->
+<template id="tpl-player">
+  <div class="player" id="player">
+    <video controls preload="metadata" playsinline poster="media/poster.jpg" id="film">
+      <source src="media/video.mp4" type="video/mp4">
+      你的浏览器不支持 HTML5 视频播放。
+    </video>
+    <div class="player-empty">
+      <strong>视频还没放进来</strong>
+      <span>把成片命名为 <code>video.mp4</code>，放到 <code>media\</code> 文件夹里</span>
+    </div>
+  </div>
+</template>
+
+<script src="content.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ════════ 章节定义：顺序 = 页面顺序，编号 = 左上角的小数字 ════════ */
+  var 章节表 = [
+    { id:'work',    键:'成片', 编号:'01', 英文:'The Work',   类型:'player'   },
+    { id:'topic',   键:'选题', 编号:'02', 英文:'Topic',      类型:'topic'    },
+    { id:'plan',    键:'策划', 编号:'03', 英文:'Plan',       类型:'cards'    },
+    { id:'copy',    键:'文案', 编号:'04', 英文:'Script',     类型:'script'   },
+    { id:'assets',  键:'素材', 编号:'05', 英文:'Assets',     类型:'assets'   },
+    { id:'methods', 键:'方法', 编号:'06', 英文:'Methods',    类型:'methods'  },
+    { id:'tools',   键:'工具', 编号:'07', 英文:'Tools',      类型:'tools'    },
+    { id:'summary', 键:'总结', 编号:'08', 英文:'Reflection', 类型:'takeaways'}
+  ];
+
+  /* ════════ 小工具 ════════ */
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  // [[文字]] → 高亮
+  function rich(s){
+    return esc(s).replace(/\[\[([\s\S]+?)\]\]/g, '<em class="hl">$1</em>');
+  }
+  // 换行符 → <br>
+  function richNl(s){
+    return rich(s).replace(/\r?\n/g, '<br>');
+  }
+  function 列表(arr, fn){
+    return (arr || []).map(fn).join('');
+  }
+
+  /* ════════ 各类型的正文渲染 ════════ */
+  var 渲染 = {
+
+    /* — 成片 — */
+    player: function (d) {
+      var 模板 = document.getElementById('tpl-player');
+      return 模板.innerHTML +
+        '<p class="player-note">' +
+          列表(d.信息条, function (t) { return '<span>' + esc(t) + '</span>'; }) +
+        '</p>';
+    },
+
+    /* — 选题 — */
+    topic: function (d) {
+      var 小节 = 列表(d.小节, function (x) {
+        return '<div>' +
+          '<h4>' + esc(x.标题) + '</h4>' +
+          列表(x.段落, function (p) { return '<p>' + rich(p) + '</p>'; }) +
+        '</div>';
+      });
+      var 概括 = d.一句话概括
+        ? '<div class="quote"><strong>一句话概括：</strong>' + rich(d.一句话概括) + '</div>'
+        : '';
+      return '<p class="lead-text">' + rich(d.引言) + '</p>' +
+             '<div class="split">' + 小节 + '</div>' + 概括;
+    },
+
+    /* — 策划 — */
+    cards: function (d) {
+      var 卡 = 列表(d.卡片, function (c) {
+        var 内容 = (c.列表 && c.列表.length)
+          ? '<ul>' + 列表(c.列表, function (i) { return '<li>' + rich(i) + '</li>'; }) + '</ul>'
+          : '<p>' + rich(c.段落 || '') + '</p>';
+        return '<div class="card">' +
+          (c.标签 ? '<span class="card-k">' + esc(c.标签) + '</span>' : '') +
+          '<h4>' + esc(c.标题) + '</h4>' + 内容 +
+        '</div>';
+      });
+      var 流程 = (d.结构流程 && d.结构流程.length)
+        ? '<div class="flow"><span class="flow-label">内容结构</span>' +
+          d.结构流程.map(function (n, i) {
+            return (i ? '<i>◆</i>' : '') + '<b>' + esc(n) + '</b>';
+          }).join('') + '</div>'
+        : '';
+      return '<div class="cards">' + 卡 + '</div>' + 流程;
+    },
+
+    /* — 文案 — */
+    script: function (d) {
+      var 段 = 列表(d.段落, function (p) {
+        return '<div class="script-part">' +
+          (p.标签 ? '<span class="script-label">' + esc(p.标签) + '</span>' : '') +
+          '<p class="script-text">' + richNl(p.正文) + '</p>' +
+          (p.提示 ? '<span class="cue">' + esc(p.提示) + '</span>' : '') +
+        '</div>';
+      });
+      var 备注 = d.备注 ? '<p class="script-note">' + rich(d.备注) + '</p>' : '';
+      return '<div class="script">' + 段 + 备注 + '</div>';
+    },
+
+    /* — 素材 — */
+    assets: function (d) {
+      var 卡 = 列表(d.卡片, function (c) {
+        var 路径 = c.图片 || '';
+        var 文件名 = 路径.split('/').pop();
+        return '<article class="asset">' +
+          '<figure class="shot">' +
+            '<img src="' + esc(路径) + '" alt="' + esc(c.标题) + '" ' +
+                 'onerror="this.closest(\'.shot\').classList.add(\'is-empty\')">' +
+            '<div class="shot-empty"><span>配图占位</span><code>' + esc(文件名) + '</code></div>' +
+          '</figure>' +
+          '<div class="asset-body">' +
+            '<h4>' + esc(c.标题) +
+              (c.类型 ? ' <span class="tag">' + esc(c.类型) + '</span>' : '') +
+            '</h4>' +
+            '<p>' + rich(c.说明 || '') + '</p>' +
+            (c.来源 ? '<span class="src">' + esc(c.来源) + '</span>' : '') +
+          '</div>' +
+        '</article>';
+      });
+      return '<div class="assets">' + 卡 + '</div>';
+    },
+
+    /* — 方法 — */
+    methods: function (d) {
+      var 条 = (d.条目 || []).map(function (m, i) {
+        var 号 = (i + 1 < 10 ? '0' : '') + (i + 1);
+        return '<div class="method">' +
+          '<h4><span class="mnum">' + 号 + '</span>' + esc(m.名称) + '</h4>' +
+          '<div class="method-body">' +
+            '<p>' + rich(m.做法) + '</p>' +
+            (m.原因 ? '<p class="why">为什么：' + rich(m.原因) + '</p>' : '') +
+          '</div>' +
+        '</div>';
+      }).join('');
+      return '<div class="methods">' + 条 + '</div>';
+    },
+
+    /* — 工具 — */
+    tools: function (d) {
+      var 卡 = 列表(d.卡片, function (t) {
+        return '<div class="tool">' +
+          '<div class="tool-mark">' + esc(t.图标) + '</div>' +
+          '<div class="tool-body">' +
+            '<h4>' + esc(t.名称) + '</h4>' +
+            '<p>' + rich(t.用途) + '</p>' +
+          '</div>' +
+        '</div>';
+      });
+      return '<div class="tools-grid">' + 卡 + '</div>';
+    },
+
+    /* — 总结 — */
+    takeaways: function (d) {
+      var 栏 = 列表(d.三栏, function (t) {
+        return '<div class="takeaway">' +
+          '<h4>' + esc(t.标题) + '</h4>' +
+          '<p>' + rich(t.内容) + '</p>' +
+        '</div>';
+      });
+      var 收尾 = d.收尾 ? '<p class="closing">' + rich(d.收尾) + '</p>' : '';
+      return '<div class="takeaways">' + 栏 + '</div>' + 收尾;
+    }
+  };
+
+  /* ════════ content.js 没加载成功时的提示 ════════ */
+  if (typeof 内容 === 'undefined') {
+    document.getElementById('sections').innerHTML =
+      '<div class="oops">' +
+        '<h2>内容没有加载成功</h2>' +
+        '<p>网页需要读取同目录下的 <code>content.js</code>，但现在读不到。</p>' +
+        '<p>请检查这几点：</p>' +
+        '<ol>' +
+          '<li><code>content.js</code> 是否和 <code>index.html</code> 在同一个文件夹里</li>' +
+          '<li>文件名是否被系统改成了 <code>content.js.txt</code>（在文件夹选项里打开「显示文件扩展名」确认）</li>' +
+          '<li>用记事本打开 <code>content.js</code>，随便改动一个字再存回去，看浏览器重开后有没有变化</li>' +
+        '</ol>' +
+      '</div>';
+    return;
+  }
+
+  /* ════════ 渲染导航 ════════ */
+  function 章节名(c){ return 内容[c.键] && 内容[c.键].名称 ? 内容[c.键].名称 : c.键; }
+
+  document.getElementById('brand').textContent = '课程作业展示';
+  document.getElementById('navlinks').innerHTML = 章节表.map(function (c) {
+    return '<a href="#' + c.id + '">' + esc(章节名(c)) + '</a>';
+  }).join('');
+
+  /* ════════ 渲染首屏 ════════ */
+  (function () {
+    var h = 内容.首屏 || {};
+    var 印 = h.印章 || '';
+
+    // 背后那个巨大的淡字，取印章的第一个字
+    var 水印 = 印
+      ? '<span class="watermark" aria-hidden="true">' + esc(印.charAt(0)) + '</span>'
+      : '';
+
+    document.getElementById('hero').innerHTML =
+      水印 +
+      '<div class="hero-head">' +
+        (印 ? '<span class="seal">' + esc(印) + '</span>' : '') +
+        (h.课程标签 ? '<span class="chip">' + esc(h.课程标签) + '</span>' : '') +
+      '</div>' +
+      '<h1>' + esc(h.主标题 || '') + '</h1>' +
+      '<p class="lede">' + rich(h.简介 || '') + '</p>' +
+      '<dl class="meta">' + 列表(h.基本信息, function (m) {
+        return '<div><dt>' + esc(m.名称) + '</dt><dd>' + esc(m.值) + '</dd></div>';
+      }) + '</dl>' +
+      '<nav class="toc"><span class="toc-label">作业内容</span>' +
+        章节表.map(function (c) {
+          return '<a href="#' + c.id + '">' + esc(章节名(c)) + '</a>';
+        }).join('') +
+      '</nav>';
+  })();
+
+  /* ════════ 渲染正文各区块 ════════ */
+  document.getElementById('sections').innerHTML = 章节表.map(function (c, i) {
+    var d = 内容[c.键];
+    if (!d || !渲染[c.类型]) return '';
+    var 带底 = (i % 2 === 1) ? ' class="band"' : '';
+    return '<section id="' + c.id + '"' + 带底 + '><div class="wrap">' +
+      '<div class="sec-head">' +
+        '<p class="sec-kicker">' + c.编号 + ' · ' + c.英文 + '</p>' +
+        '<h2><span class="idx">' + c.编号 + '</span>' + esc(章节名(c)) + '</h2>' +
+        (d.副标题 ? '<p>' + esc(d.副标题) + '</p>' : '') +
+      '</div>' + 渲染[c.类型](d) +
+    '</div></section>';
+  }).join('');
+
+  /* ════════ 渲染页脚 ════════ */
+  (function () {
+    var f = 内容.页脚 || {};
+    document.getElementById('footer').innerHTML =
+      '<span>' + esc(f.左 || '') + '</span><span>' + esc(f.右 || '') + '</span>';
+  })();
+
+  /* ════════ 交互 ════════ */
+
+  /* 视频文件不存在时显示占位，而不是一块黑屏 */
+  (function () {
+    var film = document.getElementById('film');
+    var player = document.getElementById('player');
+    if (!film || !player) return;
+
+    function 置空(){ player.classList.add('is-empty'); }
+
+    film.addEventListener('error', 置空);
+    var src = film.querySelector('source');
+    if (src) src.addEventListener('error', 置空);
+    film.addEventListener('loadedmetadata', function () {
+      player.classList.remove('is-empty');
+    });
+    setTimeout(function () { if (!film.readyState) 置空(); }, 1500);
+  })();
+
+  /* 回到顶部按钮 */
+  (function () {
+    var btn = document.getElementById('totop');
+    if (!btn) return;
+    function onScroll(){ btn.classList.toggle('is-on', window.scrollY > 600); }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+
+  /* 导航高亮当前区块 */
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.nav-links a'));
+    var targets = links.map(function (a) {
+      return document.querySelector(a.getAttribute('href'));
+    }).filter(Boolean);
+    if (!targets.length) return;
+
+    function onScroll() {
+      var y = window.scrollY + 140;
+      var current = targets[0];
+      targets.forEach(function (t) { if (t.offsetTop <= y) current = t; });
+      links.forEach(function (a) {
+        a.classList.toggle('is-on', a.getAttribute('href') === '#' + current.id);
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+
+})();
+</script>
+
+</body>
+</html>
